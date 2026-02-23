@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IRONLOG — Gymtracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --card: #1e1e1e;
+    --border: #2a2a2a;
+    --accent: #e8ff47;
+    --accent2: #ff4747;
+    --text: #f0f0f0;
+    --muted: #666;
+    --radius: 12px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+  }
+
+  header {
+    padding: 32px 40px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.8rem;
+    letter-spacing: 4px;
+    color: var(--accent);
+  }
+
+  header span {
+    font-size: 0.78rem;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .main {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 90px);
+  }
+
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .sidebar h2 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.2rem;
+    letter-spacing: 3px;
+    color: var(--muted);
+    margin-bottom: 4px;
+  }
+
+  .workout-item {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+
+  .workout-item:hover { border-color: var(--accent); transform: translateX(2px); }
+  .workout-item.active { border-color: var(--accent); background: #1f2200; }
+
+  .workout-item .name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 4px;
+  }
+
+  .workout-item .meta {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .workout-item .delete-btn {
+    position: absolute;
+    top: 10px; right: 10px;
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 1rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .workout-item:hover .delete-btn { opacity: 1; }
+  .workout-item .delete-btn:hover { color: var(--accent2); }
+
+  .btn {
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    letter-spacing: 0.5px;
+  }
+
+  .btn:hover { background: #d4eb00; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 8px;
+    padding: 10px 16px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+  .btn-danger {
+    background: transparent;
+    border: 1px solid #ff4747;
+    color: #ff4747;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-danger:hover { background: #ff474720; }
+
+  .content {
+    padding: 32px 40px;
+    overflow-y: auto;
+  }
+
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: 16px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  .empty-state .icon { font-size: 4rem; }
+  .empty-state h3 { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; letter-spacing: 3px; color: #333; }
+
+  .workout-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .workout-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 3px;
+  }
+
+  .exercise-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-bottom: 16px;
+    animation: slideIn 0.25s ease;
+  }
+
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .exercise-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .exercise-name-input {
+    background: none;
+    border: none;
+    border-bottom: 2px solid var(--border);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 4px 0;
+    width: 260px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .exercise-name-input:focus { border-color: var(--accent); }
+  .exercise-name-input::placeholder { color: var(--muted); }
+
+  .sets-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .sets-table th {
+    text-align: left;
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0 8px 10px;
+  }
+
+  .sets-table td {
+    padding: 6px 8px;
+  }
+
+  .set-number {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    color: var(--accent);
+    width: 40px;
+  }
+
+  .set-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    padding: 7px 10px;
+    width: 80px;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.15s;
+  }
+
+  .set-input:focus { border-color: var(--accent); }
+
+  .set-delete {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: all 0.15s;
+  }
+
+  .set-delete:hover { color: var(--accent2); background: #ff474715; }
+
+  .add-set-row td {
+    padding-top: 10px;
+  }
+
+  /* Modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px;
+    width: 380px;
+    animation: popIn 0.2s ease;
+  }
+
+  @keyframes popIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+  }
+
+  .modal h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+  }
+
+  .form-group { margin-bottom: 16px; }
+
+  .form-group label {
+    display: block;
+    font-size: 0.78rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .form-group input {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-group input:focus { border-color: var(--accent); }
+
+  .modal-actions { display: flex; gap: 10px; margin-top: 24px; }
+  .modal-actions .btn { flex: 1; }
+
+  .tag {
+    display: inline-block;
+    background: #e8ff4715;
+    color: var(--accent);
+    border-radius: 4px;
+    padding: 2px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    margin-left: 8px;
+    vertical-align: middle;
+  }
+
+  @media (max-width: 700px) {
+    .main { grid-template-columns: 1fr; }
+    .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 280px; overflow-y: auto; }
+    header { padding: 20px; }
+    .content { padding: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>IRONLOG</h1>
+  <span>Gymframstegsspårare</span>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <h2>Pass</h2>
+    <div id="workoutList"></div>
+    <button class="btn" style="margin-top:8px" onclick="openModal()">+ Nytt pass</button>
+    <button class="btn-ghost" style="margin-top:8px" onclick="openImport()">📥 Importera pass</button>
+  </div>
+
+  <div class="content" id="content">
+    <div class="empty-state">
+      <div class="icon">🏋️</div>
+      <h3>No Workout Selected</h3>
+      <p style="font-size:0.9rem">Create a workout on the left or select one to get started.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete Modal -->
+<div class="modal-overlay" id="confirmDeleteOverlay">
+  <div class="modal">
+    <h3>Ta bort pass</h3>
+    <p style="color:var(--muted);margin-bottom:24px;">Är du säker på att du vill ta bort <strong id="confirmDeleteName" style="color:var(--text)"></strong>? Detta går inte att ångra.</p>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeConfirmDelete()">Avbryt</button>
+      <button class="btn" style="background:var(--accent2);color:#fff;" onclick="executeDeleteWorkout()">Ja, ta bort</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share Modal -->
+<div class="modal-overlay" id="shareOverlay">
+  <div class="modal">
+    <h3>Dela pass</h3>
+    <div class="form-group">
+      <label>Delningskod — kopiera och skicka till någon</label>
+      <textarea id="shareCode" readonly style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;padding:12px;resize:none;height:100px;outline:none;word-break:break-all;"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeShare()">Stäng</button>
+      <button class="btn" id="copyBtn" onclick="copyShareCode()">📋 Kopiera</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importOverlay">
+  <div class="modal">
+    <h3>Importera pass</h3>
+    <div class="form-group">
+      <label>Klistra in delningskoden här</label>
+      <textarea id="importCode" placeholder="Klistra in koden här…" style="width:100%;background:var(--card);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:0.8rem;padding:12px;resize:none;height:100px;outline:none;word-break:break-all;"></textarea>
+    </div>
+    <p id="importError" style="color:var(--accent2);font-size:0.82rem;margin-top:-8px;display:none;">Ogiltig kod. Kontrollera att du kopierade hela koden.</p>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeImport()">Avbryt</button>
+      <button class="btn" onclick="confirmImport()">Importera</button>
+    </div>
+  </div>
+</div>
+
+<!-- Rename Modal -->
+<div class="modal-overlay" id="renameOverlay">
+  <div class="modal">
+    <h3>Byt namn på pass</h3>
+    <div class="form-group">
+      <label>Nytt namn</label>
+      <input type="text" id="renameInput" placeholder="t.ex. Push-dag, Ben, Helkropp…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeRename()">Avbryt</button>
+      <button class="btn" onclick="confirmRename()">Spara</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <h3>Nytt pass</h3>
+    <div class="form-group">
+      <label>Passnamn</label>
+      <input type="text" id="workoutNameInput" placeholder="t.ex. Push-dag, Ben, Helkropp…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal()">Avbryt</button>
+      <button class="btn" onclick="createWorkout()">Skapa</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let workouts = JSON.parse(localStorage.getItem('ironlog_workouts') || '[]');
+  let activeId = null;
+
+  function save() {
+    localStorage.setItem('ironlog_workouts', JSON.stringify(workouts));
+  }
+
+  function uid() {
+    return Math.random().toString(36).slice(2);
+  }
+
+  function openModal() {
+    document.getElementById('modalOverlay').classList.add('open');
+    document.getElementById('workoutNameInput').value = '';
+    document.getElementById('workoutNameInput').focus();
+  }
+
+  function closeModal() {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  document.getElementById('workoutNameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') createWorkout();
+    if (e.key === 'Escape') closeModal();
+  });
+
+  document.getElementById('modalOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modalOverlay')) closeModal();
+  });
+
+  function createWorkout() {
+    const name = document.getElementById('workoutNameInput').value.trim();
+    if (!name) return;
+    const workout = { id: uid(), name, exercises: [] };
+    workouts.push(workout);
+    save();
+    renderSidebar();
+    selectWorkout(workout.id);
+    closeModal();
+  }
+
+  function openRename() {
+    const w = getWorkout();
+    if (!w) return;
+    document.getElementById('renameInput').value = w.name;
+    document.getElementById('renameOverlay').classList.add('open');
+    setTimeout(() => { document.getElementById('renameInput').focus(); document.getElementById('renameInput').select(); }, 50);
+  }
+
+  function closeRename() {
+    document.getElementById('renameOverlay').classList.remove('open');
+  }
+
+  function confirmRename() {
+    const val = document.getElementById('renameInput').value.trim();
+    if (!val) return;
+    const w = getWorkout();
+    w.name = val;
+    save();
+    closeRename();
+    renderSidebar();
+    renderContent();
+  }
+
+  document.getElementById('renameInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmRename();
+    if (e.key === 'Escape') closeRename();
+  });
+
+  document.getElementById('renameOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('renameOverlay')) closeRename();
+  });
+
+  function deleteWorkout(id) {
+    workouts = workouts.filter(w => w.id !== id);
+    save();
+    if (activeId === id) { activeId = null; renderContent(); }
+    renderSidebar();
+  }
+
+  function selectWorkout(id) {
+    activeId = id;
+    renderSidebar();
+    renderContent();
+  }
+
+  function getWorkout() {
+    return workouts.find(w => w.id === activeId);
+  }
+
+  function addExercise() {
+    const w = getWorkout();
+    w.exercises.push({ id: uid(), name: '', sets: [{ id: uid(), reps: '' }] });
+    save();
+    renderContent();
+  }
+
+  function deleteExercise(exId) {
+    const w = getWorkout();
+    w.exercises = w.exercises.filter(e => e.id !== exId);
+    save();
+    renderContent();
+  }
+
+  function addSet(exId) {
+    const w = getWorkout();
+    const ex = w.exercises.find(e => e.id === exId);
+    ex.sets.push({ id: uid(), reps: '' });
+    save();
+    renderContent();
+  }
+
+  function deleteSet(exId, setId) {
+    const w = getWorkout();
+    const ex = w.exercises.find(e => e.id === exId);
+    if (ex.sets.length === 1) return;
+    ex.sets = ex.sets.filter(s => s.id !== setId);
+    save();
+    renderContent();
+  }
+
+  function updateExerciseName(exId, val) {
+    const w = getWorkout();
+    const ex = w.exercises.find(e => e.id === exId);
+    ex.name = val;
+    save();
+    updateSidebarMeta();
+  }
+
+  function updateSetWeight(exId, setId, val) {
+    const w = getWorkout();
+    const ex = w.exercises.find(e => e.id === exId);
+    const set = ex.sets.find(s => s.id === setId);
+    set.weight = val;
+    save();
+  }
+
+  function updateSetReps(exId, setId, val) {
+    const w = getWorkout();
+    const ex = w.exercises.find(e => e.id === exId);
+    const set = ex.sets.find(s => s.id === setId);
+    set.reps = val;
+    save();
+  }
+
+  function updateSidebarMeta() {
+    renderSidebar();
+  }
+
+  let pendingDeleteId = null;
+
+  function confirmDeleteWorkout(id) {
+    const w = workouts.find(w => w.id === id);
+    if (!w) return;
+    pendingDeleteId = id;
+    document.getElementById('confirmDeleteName').textContent = w.name;
+    document.getElementById('confirmDeleteOverlay').classList.add('open');
+  }
+
+  function closeConfirmDelete() {
+    pendingDeleteId = null;
+    document.getElementById('confirmDeleteOverlay').classList.remove('open');
+  }
+
+  function executeDeleteWorkout() {
+    if (!pendingDeleteId) return;
+    deleteWorkout(pendingDeleteId);
+    closeConfirmDelete();
+  }
+
+  document.getElementById('confirmDeleteOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('confirmDeleteOverlay')) closeConfirmDelete();
+  });
+
+  // --- Share & Import ---
+  function openShare() {
+    const w = getWorkout();
+    if (!w) return;
+    const code = btoa(unescape(encodeURIComponent(JSON.stringify(w))));
+    document.getElementById('shareCode').value = code;
+    document.getElementById('copyBtn').textContent = '📋 Kopiera';
+    document.getElementById('shareOverlay').classList.add('open');
+  }
+
+  function closeShare() {
+    document.getElementById('shareOverlay').classList.remove('open');
+  }
+
+  function copyShareCode() {
+    const ta = document.getElementById('shareCode');
+    ta.select();
+    navigator.clipboard.writeText(ta.value).then(() => {
+      document.getElementById('copyBtn').textContent = '✅ Kopierad!';
+      setTimeout(() => document.getElementById('copyBtn').textContent = '📋 Kopiera', 2000);
+    });
+  }
+
+  function openImport() {
+    document.getElementById('importCode').value = '';
+    document.getElementById('importError').style.display = 'none';
+    document.getElementById('importOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('importCode').focus(), 50);
+  }
+
+  function closeImport() {
+    document.getElementById('importOverlay').classList.remove('open');
+  }
+
+  function confirmImport() {
+    const code = document.getElementById('importCode').value.trim();
+    const errEl = document.getElementById('importError');
+    try {
+      const workout = JSON.parse(decodeURIComponent(escape(atob(code))));
+      if (!workout.name || !Array.isArray(workout.exercises)) throw new Error();
+      workout.id = uid(); // give it a fresh id to avoid collision
+      workouts.push(workout);
+      save();
+      renderSidebar();
+      selectWorkout(workout.id);
+      closeImport();
+    } catch {
+      errEl.style.display = 'block';
+    }
+  }
+
+  document.getElementById('shareOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('shareOverlay')) closeShare();
+  });
+  document.getElementById('importOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('importOverlay')) closeImport();
+  });
+
+  // --- Render ---
+  function renderSidebar() {
+    const list = document.getElementById('workoutList');
+    if (workouts.length === 0) {
+      list.innerHTML = `<p style="color:var(--muted);font-size:0.85rem;margin:4px 0 8px">Inga pass ännu.</p>`;
+      return;
+    }
+    list.innerHTML = workouts.map(w => {
+      const exCount = w.exercises.length;
+      const setCount = w.exercises.reduce((a, e) => a + e.sets.length, 0);
+      return `
+        <div class="workout-item ${w.id === activeId ? 'active' : ''}" data-id="${w.id}">
+          <button class="delete-btn" data-delete="${w.id}" title="Ta bort pass">✕</button>
+          <div class="name">${w.name}</div>
+          <div class="meta">${exCount} övning${exCount !== 1 ? 'ar' : ''} · ${setCount} set</div>
+        </div>
+      `;
+    }).join('');
+
+    list.querySelectorAll('.workout-item').forEach(el => {
+      el.addEventListener('click', e => {
+        const deleteBtn = e.target.closest('[data-delete]');
+        if (deleteBtn) {
+          e.stopPropagation();
+          deleteWorkout(deleteBtn.dataset.delete);
+        } else {
+          selectWorkout(el.dataset.id);
+        }
+      });
+    });
+  }
+
+  function renderContent() {
+    const content = document.getElementById('content');
+    const w = getWorkout();
+
+    if (!w) {
+      content.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">🏋️</div>
+          <h3>Inget pass valt</h3>
+          <p style="font-size:0.9rem">Skapa ett pass till vänster eller välj ett för att komma igång.</p>
+        </div>`;
+      return;
+    }
+
+    const exercisesHTML = w.exercises.map((ex, i) => {
+      const setsHTML = ex.sets.map((set, si) => `
+        <tr>
+          <td class="set-number">${si + 1}</td>
+          <td>
+            <input class="set-input weight-input" type="number" min="0" step="0.5" placeholder="—" value="${set.weight ?? ''}"
+              data-exid="${ex.id}" data-id="${set.id}" title="Vikt (kg)" />
+          </td>
+          <td>
+            <input class="set-input reps-input" type="number" min="1" placeholder="—" value="${set.reps}"
+              data-exid="${ex.id}" data-id="${set.id}" title="Reps" />
+          </td>
+          <td>
+            <button class="set-delete" data-action="delete-set" data-exid="${ex.id}" data-id="${set.id}" title="Ta bort set">✕</button>
+          </td>
+        </tr>
+      `).join('');
+
+      return `
+        <div class="exercise-card">
+          <div class="exercise-header">
+            <input class="exercise-name-input" type="text" placeholder="Övningsnamn…"
+              value="${ex.name}" data-id="${ex.id}" />
+            <span class="tag">${ex.sets.length} set</span>
+            <button class="btn-danger" data-action="delete-exercise" data-id="${ex.id}">Ta bort</button>
+          </div>
+          <table class="sets-table">
+            <thead>
+              <tr>
+                <th>Set</th>
+                <th>Vikt (kg)</th>
+                <th>Reps</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${setsHTML}
+              <tr class="add-set-row">
+                <td colspan="4">
+                  <button class="btn-ghost" data-action="add-set" data-id="${ex.id}">+ Lägg till set</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+    }).join('');
+
+    content.innerHTML = `
+      <div class="workout-header">
+        <div class="workout-title">${w.name}</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn-ghost" data-action="share">🔗 Dela</button>
+          <button class="btn-ghost" data-action="rename">✏️ Byt namn</button>
+          <button class="btn-danger" data-action="delete-workout" data-id="${w.id}">🗑 Ta bort pass</button>
+          <button class="btn" data-action="add-exercise">+ Lägg till övning</button>
+        </div>
+      </div>
+      ${w.exercises.length === 0
+        ? `<div style="text-align:center;color:var(--muted);margin-top:60px">
+            <p style="font-size:2rem;margin-bottom:12px">💪</p>
+            <p>Inga övningar ännu. Lägg till din första!</p>
+           </div>`
+        : exercisesHTML
+      }
+    `;
+
+    // Event delegation for all content actions
+    content.addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      if (action === 'share') openShare();
+      else if (action === 'rename') openRename();
+      else if (action === 'delete-workout') confirmDeleteWorkout(btn.dataset.id);
+      else if (action === 'add-exercise') addExercise();
+      else if (action === 'delete-exercise') deleteExercise(btn.dataset.id);
+      else if (action === 'add-set') addSet(btn.dataset.id);
+      else if (action === 'delete-set') deleteSet(btn.dataset.exid, btn.dataset.id);
+    });
+
+    // Live input handlers
+    content.querySelectorAll('.exercise-name-input').forEach(input => {
+      input.addEventListener('input', () => updateExerciseName(input.dataset.id, input.value));
+    });
+    content.querySelectorAll('.weight-input').forEach(input => {
+      input.addEventListener('change', () => updateSetWeight(input.dataset.exid, input.dataset.id, input.value));
+    });
+    content.querySelectorAll('.reps-input').forEach(input => {
+      input.addEventListener('change', () => updateSetReps(input.dataset.exid, input.dataset.id, input.value));
+    });
+  }
+
+  renderSidebar();
+  renderContent();
+</script>
+</body>
+</html>
