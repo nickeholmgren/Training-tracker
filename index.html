@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>IRONLOG — Gymtracker</title>
+<title>Training tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -360,7 +360,118 @@
     vertical-align: middle;
   }
 
+  /* Nav tabs */
+  .nav-tabs {
+    display: flex;
+    gap: 4px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 40px;
+  }
+
+  .nav-tab {
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: var(--muted);
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.1rem;
+    letter-spacing: 2px;
+    padding: 14px 20px 11px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .nav-tab:hover { color: var(--text); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* PB section */
+  .pb-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    margin-top: 8px;
+  }
+
+  .pb-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    animation: slideIn 0.25s ease;
+    position: relative;
+  }
+
+  .pb-card:hover { border-color: #333; }
+
+  .pb-card .pb-name {
+    font-weight: 600;
+    font-size: 1rem;
+    margin-bottom: 12px;
+    padding-right: 24px;
+  }
+
+  .pb-entries { display: flex; flex-direction: column; gap: 8px; }
+
+  .pb-entry {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .pb-entry .pb-medal { font-size: 1.1rem; min-width: 24px; text-align: center; }
+
+  .pb-entry .pb-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+
+  .pb-entry .pb-label {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .pb-entry .pb-date {
+    margin-left: auto;
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
+
+  .pb-card .pb-delete {
+    position: absolute;
+    top: 14px; right: 14px;
+    background: none; border: none;
+    color: var(--muted); cursor: pointer;
+    font-size: 0.9rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+
+  .pb-card:hover .pb-delete { opacity: 1; }
+  .pb-card .pb-delete:hover { color: var(--accent2); }
+
+  .pb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .pb-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 3px;
+  }
+
   @media (max-width: 700px) {
+    .nav-tabs { padding: 0 20px; }
     .main { grid-template-columns: 1fr; }
     .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 280px; overflow-y: auto; }
     header { padding: 20px; }
@@ -371,11 +482,15 @@
 <body>
 
 <header>
-  <h1>IRONLOG</h1>
-  <span>Gymframstegsspårare</span>
+  <h1>Training tracker</h1>
 </header>
 
-<div class="main">
+<div class="nav-tabs">
+  <button class="nav-tab active" id="tab-workouts" onclick="switchTab('workouts')">🏋️ Pass</button>
+  <button class="nav-tab" id="tab-pb" onclick="switchTab('pb')">🏆 Personbästa</button>
+</div>
+
+<div class="main" id="view-workouts">
   <div class="sidebar">
     <h2>Pass</h2>
     <div id="workoutList"></div>
@@ -386,8 +501,59 @@
   <div class="content" id="content">
     <div class="empty-state">
       <div class="icon">🏋️</div>
-      <h3>No Workout Selected</h3>
-      <p style="font-size:0.9rem">Create a workout on the left or select one to get started.</p>
+      <h3>Inget pass valt</h3>
+      <p style="font-size:0.9rem">Skapa ett pass till vänster eller välj ett för att komma igång.</p>
+    </div>
+  </div>
+</div>
+
+<!-- PB View -->
+<div id="view-pb" style="display:none; padding: 32px 40px; overflow-y:auto; min-height: calc(100vh - 140px);">
+  <div class="pb-header">
+    <div class="pb-title">Personbästa</div>
+    <button class="btn" id="addPbBtn">+ Lägg till övning</button>
+  </div>
+  <div id="pbGrid" class="pb-grid"></div>
+  <div id="pbEmpty" style="display:none; text-align:center; color:var(--muted); margin-top:60px;">
+    <p style="font-size:2rem; margin-bottom:12px">🏆</p>
+    <p>Inga personbästa ännu. Lägg till din första övning!</p>
+  </div>
+</div>
+
+<!-- Add PB Exercise Modal -->
+<div class="modal-overlay" id="pbExerciseOverlay">
+  <div class="modal">
+    <h3>Ny övning</h3>
+    <div class="form-group">
+      <label>Övningsnamn</label>
+      <input type="text" id="pbExerciseInput" placeholder="t.ex. Bänkpress, Marklyft…" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closePbExerciseModal()">Avbryt</button>
+      <button class="btn" onclick="confirmAddPbExercise()">Lägg till</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add PB Entry Modal -->
+<div class="modal-overlay" id="pbEntryOverlay">
+  <div class="modal">
+    <h3 id="pbEntryTitle">Lägg till PB</h3>
+    <div class="form-group">
+      <label>Vikt (kg)</label>
+      <input type="number" id="pbWeightInput" placeholder="t.ex. 100" min="0" step="0.5" />
+    </div>
+    <div class="form-group">
+      <label>Reps</label>
+      <input type="number" id="pbRepsInput" placeholder="t.ex. 5" min="1" />
+    </div>
+    <div class="form-group">
+      <label>Datum</label>
+      <input type="date" id="pbDateInput" />
+    </div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closePbEntryModal()">Avbryt</button>
+      <button class="btn" onclick="confirmAddPbEntry()">Spara</button>
     </div>
   </div>
 </div>
@@ -697,6 +863,150 @@
   document.getElementById('importOverlay').addEventListener('click', e => {
     if (e.target === document.getElementById('importOverlay')) closeImport();
   });
+
+  // --- Tab switching ---
+  function switchTab(tab) {
+    document.getElementById('view-workouts').style.display = tab === 'workouts' ? 'grid' : 'none';
+    document.getElementById('view-pb').style.display = tab === 'pb' ? 'block' : 'none';
+    document.getElementById('tab-workouts').classList.toggle('active', tab === 'workouts');
+    document.getElementById('tab-pb').classList.toggle('active', tab === 'pb');
+    if (tab === 'pb') renderPb();
+  }
+
+  // --- Personbästa ---
+  let pbData = JSON.parse(localStorage.getItem('ironlog_pb') || '[]');
+
+  function savePb() {
+    localStorage.setItem('ironlog_pb', JSON.stringify(pbData));
+  }
+
+  let pendingPbExId = null;
+
+  document.getElementById('addPbBtn').addEventListener('click', openPbExerciseModal);
+
+  function openPbExerciseModal() {
+    document.getElementById('pbExerciseInput').value = '';
+    document.getElementById('pbExerciseOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('pbExerciseInput').focus(), 50);
+  }
+
+  function closePbExerciseModal() {
+    document.getElementById('pbExerciseOverlay').classList.remove('open');
+  }
+
+  function confirmAddPbExercise() {
+    const name = document.getElementById('pbExerciseInput').value.trim();
+    if (!name) return;
+    pbData.push({ id: uid(), name, entries: [] });
+    savePb();
+    closePbExerciseModal();
+    renderPb();
+  }
+
+  document.getElementById('pbExerciseInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmAddPbExercise();
+    if (e.key === 'Escape') closePbExerciseModal();
+  });
+
+  document.getElementById('pbExerciseOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('pbExerciseOverlay')) closePbExerciseModal();
+  });
+
+  function openPbEntryModal(exId) {
+    pendingPbExId = exId;
+    const ex = pbData.find(e => e.id === exId);
+    document.getElementById('pbEntryTitle').textContent = `Nytt PB — ${ex.name}`;
+    document.getElementById('pbWeightInput').value = '';
+    document.getElementById('pbRepsInput').value = '';
+    document.getElementById('pbDateInput').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('pbEntryOverlay').classList.add('open');
+    setTimeout(() => document.getElementById('pbWeightInput').focus(), 50);
+  }
+
+  function closePbEntryModal() {
+    document.getElementById('pbEntryOverlay').classList.remove('open');
+    pendingPbExId = null;
+  }
+
+  function confirmAddPbEntry() {
+    const weight = document.getElementById('pbWeightInput').value;
+    const reps = document.getElementById('pbRepsInput').value;
+    const date = document.getElementById('pbDateInput').value;
+    if (!weight && !reps) return;
+    const ex = pbData.find(e => e.id === pendingPbExId);
+    ex.entries.unshift({ id: uid(), weight: weight || null, reps: reps || null, date });
+    savePb();
+    closePbEntryModal();
+    renderPb();
+  }
+
+  document.getElementById('pbEntryOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('pbEntryOverlay')) closePbEntryModal();
+  });
+
+  function deletePbExercise(exId) {
+    pbData = pbData.filter(e => e.id !== exId);
+    savePb();
+    renderPb();
+  }
+
+  function deletePbEntry(exId, entryId) {
+    const ex = pbData.find(e => e.id === exId);
+    ex.entries = ex.entries.filter(e => e.id !== entryId);
+    savePb();
+    renderPb();
+  }
+
+  function renderPb() {
+    const grid = document.getElementById('pbGrid');
+    const empty = document.getElementById('pbEmpty');
+
+    if (pbData.length === 0) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+
+    const medals = ['🥇', '🥈', '🥉'];
+
+    grid.innerHTML = pbData.map(ex => {
+      const entriesHTML = ex.entries.slice(0, 3).map((entry, i) => {
+        const weightStr = entry.weight ? `${entry.weight} kg` : '';
+        const repsStr = entry.reps ? `${entry.reps} reps` : '';
+        const val = [weightStr, repsStr].filter(Boolean).join(' × ');
+        const dateStr = entry.date ? new Date(entry.date).toLocaleDateString('sv-SE', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+        return `
+          <div class="pb-entry" data-ex="${ex.id}" data-entry="${entry.id}">
+            <span class="pb-medal">${medals[i] || '•'}</span>
+            <div>
+              <div class="pb-val">${val}</div>
+            </div>
+            <span class="pb-date">${dateStr}</span>
+            <button class="set-delete" data-action="delete-pb-entry" data-exid="${ex.id}" data-id="${entry.id}" title="Ta bort">✕</button>
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="pb-card">
+          <button class="pb-delete" data-action="delete-pb-ex" data-id="${ex.id}" title="Ta bort övning">✕</button>
+          <div class="pb-name">${ex.name}</div>
+          <div class="pb-entries">
+            ${entriesHTML || '<p style="color:var(--muted);font-size:0.82rem">Inga resultat ännu.</p>'}
+          </div>
+          <button class="btn-ghost" data-action="add-pb-entry" data-id="${ex.id}" style="margin-top:14px;width:100%;font-size:0.82rem;padding:8px">+ Lägg till resultat</button>
+        </div>`;
+    }).join('');
+
+    grid.querySelectorAll('[data-action]').forEach(el => {
+      el.addEventListener('click', e => {
+        const action = el.dataset.action;
+        if (action === 'delete-pb-ex') deletePbExercise(el.dataset.id);
+        else if (action === 'add-pb-entry') openPbEntryModal(el.dataset.id);
+        else if (action === 'delete-pb-entry') deletePbEntry(el.dataset.exid, el.dataset.id);
+      });
+    });
+  }
 
   // --- Render ---
   function renderSidebar() {
