@@ -662,6 +662,113 @@
     }
     .form-group input { font-size: 1rem; padding: 14px; }
   }
+
+  /* ── Converter ── */
+  #view-converter {
+    padding: 32px 40px;
+    min-height: calc(100vh - 140px);
+  }
+
+  .converter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .converter-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 3px;
+  }
+
+  .converter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 600px;
+  }
+
+  .converter-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+
+  .converter-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .converter-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .converter-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.1rem;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 0;
+  }
+
+  .converter-input:focus { border-color: var(--accent); }
+
+  .converter-unit {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .converter-result {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .converter-result-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+
+  .converter-result-unit {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 700px) {
+    #view-converter { padding: 16px; min-height: calc(100vh - 130px); }
+    .converter-header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px; padding-bottom: 16px; }
+    .converter-title { font-size: 1.8rem; }
+    .converter-grid { grid-template-columns: 1fr; max-width: 100%; gap: 12px; }
+  }
 </style>
 </head>
 <body>
@@ -680,11 +787,16 @@
     <span class="nav-icon">🏆</span>
     Personbästa
   </button>
+  <button id="bnav-converter" onclick="switchTab('converter')">
+    <span class="nav-icon">⚖️</span>
+    Omvandla
+  </button>
 </nav>
 
 <div class="nav-tabs">
   <button class="nav-tab active" id="tab-workouts" onclick="switchTab('workouts')">🏋️ Pass</button>
   <button class="nav-tab" id="tab-pb" onclick="switchTab('pb')">🏆 Personbästa</button>
+  <button class="nav-tab" id="tab-converter" onclick="switchTab('converter')">⚖️ Omvandlare</button>
 </div>
 
 <div class="main" id="view-workouts">
@@ -751,6 +863,38 @@
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closePbEntryModal()">Avbryt</button>
       <button class="btn" onclick="confirmAddPbEntry()">Spara</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Converter View -->
+<div id="view-converter" style="display:none;">
+  <div class="converter-header">
+    <div class="converter-title">Omvandlare</div>
+  </div>
+  <div class="converter-grid">
+    <div class="converter-card">
+      <h3>Kg → Lbs</h3>
+      <div class="converter-input-wrap">
+        <input class="converter-input" type="number" id="kgInput" placeholder="0" min="0" step="0.5" oninput="convertKgToLbs()" />
+        <span class="converter-unit">kg</span>
+      </div>
+      <div class="converter-result">
+        <span class="converter-result-val" id="lbsResult">—</span>
+        <span class="converter-result-unit">lbs</span>
+      </div>
+    </div>
+    <div class="converter-card">
+      <h3>Lbs → Kg</h3>
+      <div class="converter-input-wrap">
+        <input class="converter-input" type="number" id="lbsInput" placeholder="0" min="0" step="1" oninput="convertLbsToKg()" />
+        <span class="converter-unit">lbs</span>
+      </div>
+      <div class="converter-result">
+        <span class="converter-result-val" id="kgResult">—</span>
+        <span class="converter-result-unit">kg</span>
+      </div>
     </div>
   </div>
 </div>
@@ -948,7 +1092,7 @@
   function addSet(exId) {
     const w = getWorkout();
     const ex = w.exercises.find(e => e.id === exId);
-    ex.sets.push({ id: uid(), reps: '' });
+    ex.sets.push({ id: uid(), reps: '', weightKg: '', weightLbs: '', seconds: '' });
     save();
     renderContent();
   }
@@ -983,7 +1127,9 @@
     const w = getWorkout();
     const ex = w.exercises.find(e => e.id === exId);
     const set = ex.sets.find(s => s.id === setId);
-    set.weight = val;
+    if (ex.mode === 'lbs') set.weightLbs = val;
+    else if (ex.mode === 'seconds') set.seconds = val;
+    else set.weightKg = val;
     save();
   }
 
@@ -1086,14 +1232,30 @@
   function switchTab(tab) {
     document.getElementById('view-workouts').style.display = tab === 'workouts' ? 'grid' : 'none';
     document.getElementById('view-pb').style.display = tab === 'pb' ? 'block' : 'none';
+    document.getElementById('view-converter').style.display = tab === 'converter' ? 'block' : 'none';
     document.getElementById('tab-workouts').classList.toggle('active', tab === 'workouts');
     document.getElementById('tab-pb').classList.toggle('active', tab === 'pb');
+    document.getElementById('tab-converter').classList.toggle('active', tab === 'converter');
     // Bottom nav
     const bw = document.getElementById('bnav-workouts');
     const bp = document.getElementById('bnav-pb');
+    const bc = document.getElementById('bnav-converter');
     if (bw) bw.classList.toggle('active', tab === 'workouts');
     if (bp) bp.classList.toggle('active', tab === 'pb');
+    if (bc) bc.classList.toggle('active', tab === 'converter');
     if (tab === 'pb') renderPb();
+  }
+
+  function convertKgToLbs() {
+    const val = parseFloat(document.getElementById('kgInput').value);
+    const out = document.getElementById('lbsResult');
+    out.textContent = isNaN(val) ? '—' : (val * 2.20462).toFixed(1);
+  }
+
+  function convertLbsToKg() {
+    const val = parseFloat(document.getElementById('lbsInput').value);
+    const out = document.getElementById('kgResult');
+    out.textContent = isNaN(val) ? '—' : (val / 2.20462).toFixed(2);
   }
 
   // --- Personbästa ---
@@ -1280,11 +1442,13 @@
     const exercisesHTML = w.exercises.map((ex, i) => {
       const isSeconds = (ex.mode === 'seconds');
       const isLbs = (ex.mode === 'lbs');
-      const setsHTML = ex.sets.map((set, si) => `
+      const setsHTML = ex.sets.map((set, si) => {
+        const unitVal = isSeconds ? (set.seconds ?? '') : isLbs ? (set.weightLbs ?? '') : (set.weightKg ?? '');
+        return `
         <tr>
           <td class="set-number">${si + 1}</td>
           <td>
-            <input class="set-input weight-input" type="number" min="0" step="${isSeconds ? '1' : '0.5'}" placeholder="—" value="${set.weight ?? ''}"
+            <input class="set-input weight-input" type="number" min="0" step="${isSeconds ? '1' : '0.5'}" placeholder="—" value="${unitVal}"
               data-exid="${ex.id}" data-id="${set.id}" title="${isSeconds ? 'Sekunder' : isLbs ? 'Vikt (lbs)' : 'Vikt (kg)'}" />
           </td>
           <td>
@@ -1295,7 +1459,7 @@
             <button class="set-delete" data-action="delete-set" data-exid="${ex.id}" data-id="${set.id}" title="Ta bort set">✕</button>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
 
       return `
         <div class="exercise-card" draggable="false" data-exid="${ex.id}">
