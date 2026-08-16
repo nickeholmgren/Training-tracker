@@ -1598,47 +1598,58 @@
     });
 
     // ── Touch drag for mobile ──
-    let touchDragId = null, touchClone = null, touchTarget = null;
+    let touchDragId = null, touchClone = null, touchTarget = null, touchOffsetY = 0;
+
+    function cleanupTouchDrag() {
+      if (touchClone) { touchClone.remove(); touchClone = null; }
+      document.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+      touchDragId = null; touchTarget = null;
+    }
 
     content.querySelectorAll('.drag-handle').forEach(handle => {
       handle.addEventListener('touchstart', e => {
         const card = handle.closest('.exercise-card');
         touchDragId = card.dataset.exid;
+        const touch = e.touches[0];
         const rect = card.getBoundingClientRect();
+        touchOffsetY = touch.clientY - rect.top;
         touchClone = card.cloneNode(true);
-        touchClone.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;opacity:0.85;z-index:9999;pointer-events:none;border:1px solid var(--accent);background:#1f2200;border-radius:12px;';
+        touchClone.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;opacity:0.85;z-index:9999;pointer-events:none;border:1px solid var(--accent);background:#1f2200;border-radius:12px;transition:none;';
         document.body.appendChild(touchClone);
         card.classList.add('dragging');
       }, { signal, passive: true });
+    });
 
-      handle.addEventListener('touchmove', e => {
-        if (!touchClone) return;
-        e.preventDefault();
-        const touch = e.touches[0];
-        const rect = touchClone.getBoundingClientRect();
-        touchClone.style.top = (touch.clientY - rect.height / 2) + 'px';
-        // Find card under finger
-        touchClone.style.display = 'none';
-        const el = document.elementFromPoint(touch.clientX, touch.clientY);
-        touchClone.style.display = '';
-        const overCard = el && el.closest('.exercise-card');
-        content.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('drag-over'));
-        if (overCard && overCard.dataset.exid !== touchDragId) {
-          touchTarget = overCard.dataset.exid;
-          overCard.classList.add('drag-over');
-        } else {
-          touchTarget = null;
-        }
-      }, { signal });
+    // Attach move/end/cancel to document so they fire even if finger leaves the handle
+    document.addEventListener('touchmove', e => {
+      if (!touchClone || !touchDragId) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const cloneRect = touchClone.getBoundingClientRect();
+      touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
+      // Find card under finger
+      touchClone.style.visibility = 'hidden';
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchClone.style.visibility = '';
+      const overCard = el && el.closest('.exercise-card');
+      document.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('drag-over'));
+      if (overCard && overCard.dataset.exid !== touchDragId) {
+        touchTarget = overCard.dataset.exid;
+        overCard.classList.add('drag-over');
+      } else {
+        touchTarget = null;
+      }
+    }, { passive: false });
 
-      handle.addEventListener('touchend', () => {
-        if (touchClone) { touchClone.remove(); touchClone = null; }
-        content.querySelectorAll('.exercise-card').forEach(c => {
-          c.classList.remove('dragging', 'drag-over');
-        });
-        if (touchDragId && touchTarget) reorderExercise(touchDragId, touchTarget);
-        touchDragId = null; touchTarget = null;
-      }, { signal });
+    document.addEventListener('touchend', () => {
+      if (!touchDragId) return;
+      const from = touchDragId, to = touchTarget;
+      cleanupTouchDrag();
+      if (from && to) reorderExercise(from, to);
+    });
+
+    document.addEventListener('touchcancel', () => {
+      cleanupTouchDrag();
     });
   }
 
