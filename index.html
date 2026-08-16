@@ -974,6 +974,18 @@
 
 <script>
   let workouts = JSON.parse(localStorage.getItem('ironlog_workouts') || '[]');
+  // Migrate old data: set.weight -> set.weightKg
+  workouts.forEach(w => (w.exercises || []).forEach(ex => {
+    if (!ex.mode) ex.mode = 'weight';
+    (ex.sets || []).forEach(set => {
+      if (set.weight !== undefined && set.weightKg === undefined) {
+        set.weightKg = set.weight;
+        delete set.weight;
+      }
+      if (set.weightLbs === undefined) set.weightLbs = '';
+      if (set.seconds === undefined) set.seconds = '';
+    });
+  }));
   let activeId = null;
   let contentController = null; // AbortController for content event listeners
 
