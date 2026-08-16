@@ -188,6 +188,49 @@
     letter-spacing: 3px;
   }
 
+  .mode-toggle {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .mode-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .mode-toggle.active-seconds { border-color: #47b8ff; color: #47b8ff; background: #47b8ff10; }
+  .mode-toggle.active-lbs { border-color: #ff9f47; color: #ff9f47; background: #ff9f4710; }
+
+  .drag-handle {
+    cursor: grab;
+    color: var(--muted);
+    font-size: 1.1rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    user-select: none;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .drag-handle:hover { color: var(--accent); background: #e8ff4710; }
+  .drag-handle:active { cursor: grabbing; }
+
+  .exercise-card.drag-over {
+    border-color: var(--accent);
+    background: #1f2200;
+    transform: scale(1.01);
+  }
+  .exercise-card.dragging {
+    opacity: 0.4;
+    border-style: dashed;
+  }
+
   .exercise-card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -289,7 +332,7 @@
     display: none;
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.7);
-    z-index: 300;
+    z-index: 100;
     align-items: center;
     justify-content: center;
     backdrop-filter: blur(4px);
@@ -877,9 +920,20 @@
     return workouts.find(w => w.id === activeId);
   }
 
+  function reorderExercise(fromId, toId) {
+    const w = getWorkout();
+    const from = w.exercises.findIndex(e => e.id === fromId);
+    const to = w.exercises.findIndex(e => e.id === toId);
+    if (from === -1 || to === -1 || from === to) return;
+    const [moved] = w.exercises.splice(from, 1);
+    w.exercises.splice(to, 0, moved);
+    save();
+    renderContent();
+  }
+
   function addExercise() {
     const w = getWorkout();
-    w.exercises.push({ id: uid(), name: '', sets: [{ id: uid(), reps: '' }] });
+    w.exercises.unshift({ id: uid(), name: '', mode: 'weight', sets: [{ id: uid(), reps: '' }] });
     save();
     renderContent();
   }
@@ -914,6 +968,15 @@
     ex.name = val;
     save();
     updateSidebarMeta();
+  }
+
+  function toggleExerciseMode(exId) {
+    const w = getWorkout();
+    const ex = w.exercises.find(e => e.id === exId);
+    const cycle = { 'weight': 'lbs', 'lbs': 'seconds', 'seconds': 'weight' };
+    ex.mode = cycle[ex.mode] || 'lbs';
+    save();
+    renderContent();
   }
 
   function updateSetWeight(exId, setId, val) {
@@ -1215,12 +1278,14 @@
     }
 
     const exercisesHTML = w.exercises.map((ex, i) => {
+      const isSeconds = (ex.mode === 'seconds');
+      const isLbs = (ex.mode === 'lbs');
       const setsHTML = ex.sets.map((set, si) => `
         <tr>
           <td class="set-number">${si + 1}</td>
           <td>
-            <input class="set-input weight-input" type="number" min="0" step="0.5" placeholder="—" value="${set.weight ?? ''}"
-              data-exid="${ex.id}" data-id="${set.id}" title="Vikt (kg)" />
+            <input class="set-input weight-input" type="number" min="0" step="${isSeconds ? '1' : '0.5'}" placeholder="—" value="${set.weight ?? ''}"
+              data-exid="${ex.id}" data-id="${set.id}" title="${isSeconds ? 'Sekunder' : isLbs ? 'Vikt (lbs)' : 'Vikt (kg)'}" />
           </td>
           <td>
             <input class="set-input reps-input" type="number" min="1" placeholder="—" value="${set.reps}"
@@ -1233,18 +1298,20 @@
       `).join('');
 
       return `
-        <div class="exercise-card">
+        <div class="exercise-card" draggable="false" data-exid="${ex.id}">
           <div class="exercise-header">
+            <span class="drag-handle" data-action="drag-handle" title="Dra för att ändra ordning">⠿</span>
             <input class="exercise-name-input" type="text" placeholder="Övningsnamn…"
               value="${ex.name}" data-id="${ex.id}" />
             <span class="tag">${ex.sets.length} set</span>
+            <button class="mode-toggle ${isSeconds ? 'active-seconds' : isLbs ? 'active-lbs' : ''}" data-action="toggle-mode" data-id="${ex.id}">${isSeconds ? '⏱ Sek' : isLbs ? '🏋️ Lbs' : '🏋️ Kg'}</button>
             <button class="btn-danger" data-action="delete-exercise" data-id="${ex.id}">Ta bort</button>
           </div>
           <table class="sets-table">
             <thead>
               <tr>
                 <th>Set</th>
-                <th>Vikt (kg)</th>
+                <th>${isSeconds ? 'Sekunder' : isLbs ? 'Vikt (lbs)' : 'Vikt (kg)'}</th>
                 <th>Reps</th>
                 <th></th>
               </tr>
@@ -1295,6 +1362,7 @@
       else if (action === 'rename') openRename();
       else if (action === 'delete-workout') confirmDeleteWorkout(btn.dataset.id);
       else if (action === 'add-exercise') addExercise();
+      else if (action === 'toggle-mode') toggleExerciseMode(btn.dataset.id);
       else if (action === 'delete-exercise') deleteExercise(btn.dataset.id);
       else if (action === 'add-set') addSet(btn.dataset.id);
       else if (action === 'delete-set') deleteSet(btn.dataset.exid, btn.dataset.id);
@@ -1309,6 +1377,92 @@
     });
     content.querySelectorAll('.reps-input').forEach(input => {
       input.addEventListener('change', () => updateSetReps(input.dataset.exid, input.dataset.id, input.value), { signal });
+    });
+
+    // ── Drag-and-drop reordering ──
+    let dragSrcId = null;
+
+    content.querySelectorAll('.exercise-card').forEach(card => {
+      const handle = card.querySelector('.drag-handle');
+
+      // Enable dragging only when grabbing the handle
+      handle.addEventListener('mousedown', () => { card.draggable = true; }, { signal });
+      handle.addEventListener('touchstart', () => { card.draggable = true; }, { signal, passive: true });
+      card.addEventListener('dragend', () => { card.draggable = false; }, { signal });
+
+      card.addEventListener('dragstart', e => {
+        dragSrcId = card.dataset.exid;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      }, { signal });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        content.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('drag-over'));
+      }, { signal });
+
+      card.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        content.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('drag-over'));
+        if (card.dataset.exid !== dragSrcId) card.classList.add('drag-over');
+      }, { signal });
+
+      card.addEventListener('dragleave', () => {
+        card.classList.remove('drag-over');
+      }, { signal });
+
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        if (dragSrcId && card.dataset.exid !== dragSrcId) {
+          reorderExercise(dragSrcId, card.dataset.exid);
+        }
+      }, { signal });
+    });
+
+    // ── Touch drag for mobile ──
+    let touchDragId = null, touchClone = null, touchTarget = null;
+
+    content.querySelectorAll('.drag-handle').forEach(handle => {
+      handle.addEventListener('touchstart', e => {
+        const card = handle.closest('.exercise-card');
+        touchDragId = card.dataset.exid;
+        const rect = card.getBoundingClientRect();
+        touchClone = card.cloneNode(true);
+        touchClone.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;opacity:0.85;z-index:9999;pointer-events:none;border:1px solid var(--accent);background:#1f2200;border-radius:12px;';
+        document.body.appendChild(touchClone);
+        card.classList.add('dragging');
+      }, { signal, passive: true });
+
+      handle.addEventListener('touchmove', e => {
+        if (!touchClone) return;
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = touchClone.getBoundingClientRect();
+        touchClone.style.top = (touch.clientY - rect.height / 2) + 'px';
+        // Find card under finger
+        touchClone.style.display = 'none';
+        const el = document.elementFromPoint(touch.clientX, touch.clientY);
+        touchClone.style.display = '';
+        const overCard = el && el.closest('.exercise-card');
+        content.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('drag-over'));
+        if (overCard && overCard.dataset.exid !== touchDragId) {
+          touchTarget = overCard.dataset.exid;
+          overCard.classList.add('drag-over');
+        } else {
+          touchTarget = null;
+        }
+      }, { signal });
+
+      handle.addEventListener('touchend', () => {
+        if (touchClone) { touchClone.remove(); touchClone = null; }
+        content.querySelectorAll('.exercise-card').forEach(c => {
+          c.classList.remove('dragging', 'drag-over');
+        });
+        if (touchDragId && touchTarget) reorderExercise(touchDragId, touchTarget);
+        touchDragId = null; touchTarget = null;
+      }, { signal });
     });
   }
 
