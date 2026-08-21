@@ -188,6 +188,49 @@
     letter-spacing: 3px;
   }
 
+  .mode-toggle {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .mode-toggle:hover { border-color: var(--accent); color: var(--accent); }
+  .mode-toggle.active-seconds { border-color: #47b8ff; color: #47b8ff; background: #47b8ff10; }
+  .mode-toggle.active-lbs { border-color: #ff9f47; color: #ff9f47; background: #ff9f4710; }
+
+  .drag-handle {
+    cursor: grab;
+    color: var(--muted);
+    font-size: 1.1rem;
+    padding: 4px 6px;
+    border-radius: 4px;
+    transition: color 0.15s, background 0.15s;
+    user-select: none;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .drag-handle:hover { color: var(--accent); background: #e8ff4710; }
+  .drag-handle:active { cursor: grabbing; }
+
+  .exercise-card.drag-over {
+    border-color: var(--accent);
+    background: #1f2200;
+    transform: scale(1.01);
+  }
+  .exercise-card.dragging {
+    opacity: 0.4;
+    border-style: dashed;
+  }
+
   .exercise-card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -266,26 +309,6 @@
   }
 
   .set-input:focus { border-color: var(--accent); }
-
-  .exercise-comment {
-    width: 100%;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--muted);
-    font-family: 'DM Sans', sans-serif;
-    font-size: 0.8rem;
-    font-style: italic;
-    padding: 10px 12px;
-    outline: none;
-    resize: vertical;
-    min-height: 36px;
-    margin-top: 14px;
-    transition: color 0.15s, border-color 0.15s;
-  }
-
-  .exercise-comment::placeholder { color: #555; font-style: italic; }
-  .exercise-comment:focus { color: var(--text); border-color: var(--accent); }
 
   .set-delete {
     background: none;
@@ -490,13 +513,285 @@
     letter-spacing: 3px;
   }
 
+  /* Desktop: hide bottom nav */
+  .bottom-nav { display: none; }
+
   @media (max-width: 700px) {
-    .nav-tabs { padding: 0 20px; }
-    .main { grid-template-columns: 1fr; }
-    .sidebar { border-right: none; border-bottom: 1px solid var(--border); max-height: 280px; overflow-y: auto; }
-    header { padding: 20px; }
-    .content { padding: 20px; }
+    /* ── Layout ── */
+    body { padding-bottom: 72px; }
+    header { padding: 16px 20px 12px; }
+    header h1 { font-size: 2rem; letter-spacing: 3px; }
+
+    /* Hide top tab bar — replaced by bottom nav */
+    .nav-tabs { display: none; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 200;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      height: 64px;
+    }
+
+    .bottom-nav button {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      transition: color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .bottom-nav button .nav-icon { font-size: 1.4rem; line-height: 1; }
+    .bottom-nav button.active { color: var(--accent); }
+
+    /* ── Workouts view: stacked panels ── */
+    .main {
+      grid-template-columns: 1fr;
+      min-height: calc(100vh - 130px);
+    }
+
+    /* Sidebar becomes a compact horizontal scroll strip */
+    .sidebar {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      flex-direction: row;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      gap: 10px;
+      align-items: center;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      max-height: unset;
+    }
+    .sidebar::-webkit-scrollbar { display: none; }
+    .sidebar h2 { display: none; }
+
+    #workoutList {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .workout-item {
+      padding: 10px 14px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .workout-item:hover { transform: none; }
+    .workout-item .name { font-size: 0.88rem; margin-bottom: 2px; }
+    .workout-item .meta { font-size: 0.7rem; }
+    .workout-item .delete-btn { opacity: 1; font-size: 0.78rem; top: 5px; right: 6px; }
+
+    .sidebar > .btn,
+    .sidebar > .btn-ghost {
+      flex-shrink: 0;
+      white-space: nowrap;
+      padding: 10px 14px;
+      font-size: 0.82rem;
+      margin-top: 0 !important;
+    }
+
+    /* ── Content ── */
+    .content { padding: 16px; }
+
+    .workout-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+    }
+    .workout-title { font-size: 1.8rem; }
+
+    .workout-header > div {
+      display: grid !important;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      width: 100%;
+    }
+    .workout-header > div > .btn {
+      grid-column: 1 / -1;
+    }
+
+    /* ── Exercise cards ── */
+    .exercise-card { padding: 14px; margin-bottom: 12px; }
+    .exercise-header { flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .exercise-name-input { width: 100%; font-size: 1rem; }
+    .exercise-header .tag { display: none; }
+
+    .set-input { width: 70px; padding: 10px 6px; font-size: 1rem; }
+    .sets-table th { font-size: 0.65rem; padding: 0 5px 8px; }
+    .sets-table td { padding: 5px 5px; }
+    .set-number { font-size: 1rem; }
+    .set-delete { padding: 8px 10px; font-size: 1rem; }
+
+    /* ── PB view ── */
+    #view-pb { padding: 16px !important; min-height: calc(100vh - 130px) !important; }
+    .pb-header { flex-direction: column; align-items: flex-start; gap: 12px; margin-bottom: 20px; padding-bottom: 16px; }
+    .pb-title { font-size: 1.8rem; }
+    .pb-header > .btn { width: 100%; }
+    .pb-grid { grid-template-columns: 1fr; gap: 12px; }
+    .pb-card { padding: 16px; }
+    .pb-card .pb-delete { opacity: 1; }
+    .pb-entry { padding: 12px; }
+    .pb-entry .pb-val { font-size: 1.2rem; }
+
+    /* ── Modals slide up from bottom ── */
+    .modal-overlay { align-items: flex-end; padding: 0; }
+    .modal {
+      width: 100%;
+      border-radius: 20px 20px 0 0;
+      padding: 28px 24px 36px;
+    }
+    .form-group input { font-size: 1rem; padding: 14px; }
   }
+
+  /* ── Converter ── */
+  #view-converter {
+    padding: 32px 40px;
+    min-height: calc(100vh - 140px);
+  }
+
+  .converter-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .converter-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2.4rem;
+    letter-spacing: 3px;
+  }
+
+  .converter-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    max-width: 600px;
+  }
+
+  .converter-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+  }
+
+  .converter-card h3 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: 2px;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .converter-input-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .converter-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1.1rem;
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 0;
+  }
+
+  .converter-input:focus { border-color: var(--accent); }
+
+  .converter-unit {
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .converter-result {
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .converter-result-val {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: 1px;
+    line-height: 1;
+  }
+
+  .converter-result-unit {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  @media (max-width: 700px) {
+    #view-converter { padding: 16px; min-height: calc(100vh - 130px); }
+    .converter-header { flex-direction: column; align-items: flex-start; gap: 8px; margin-bottom: 20px; padding-bottom: 16px; }
+    .converter-title { font-size: 1.8rem; }
+    .converter-grid { grid-template-columns: 1fr; max-width: 100%; gap: 12px; }
+  }
+
+  .exercise-comment {
+    width: 100%;
+    background: none;
+    border: none;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    padding: 10px 4px 4px;
+    margin-top: 12px;
+    outline: none;
+    resize: none;
+    overflow: hidden;
+    line-height: 1.5;
+    transition: color 0.15s, border-color 0.15s;
+    display: block;
+  }
+  .exercise-comment:focus {
+    color: var(--text);
+    border-color: #444;
+  }
+  .exercise-comment::placeholder { color: #444; }
 </style>
 </head>
 <body>
@@ -505,9 +800,26 @@
   <h1>Training tracker</h1>
 </header>
 
+<!-- Mobile bottom nav (hidden on desktop via CSS) -->
+<nav class="bottom-nav" id="bottomNav">
+  <button id="bnav-workouts" class="active" onclick="switchTab('workouts')">
+    <span class="nav-icon">🏋️</span>
+    Pass
+  </button>
+  <button id="bnav-pb" onclick="switchTab('pb')">
+    <span class="nav-icon">🏆</span>
+    Personbästa
+  </button>
+  <button id="bnav-converter" onclick="switchTab('converter')">
+    <span class="nav-icon">⚖️</span>
+    Omvandla
+  </button>
+</nav>
+
 <div class="nav-tabs">
   <button class="nav-tab active" id="tab-workouts" onclick="switchTab('workouts')">🏋️ Pass</button>
   <button class="nav-tab" id="tab-pb" onclick="switchTab('pb')">🏆 Personbästa</button>
+  <button class="nav-tab" id="tab-converter" onclick="switchTab('converter')">⚖️ Omvandlare</button>
 </div>
 
 <div class="main" id="view-workouts">
@@ -574,6 +886,38 @@
     <div class="modal-actions">
       <button class="btn-ghost" onclick="closePbEntryModal()">Avbryt</button>
       <button class="btn" onclick="confirmAddPbEntry()">Spara</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Converter View -->
+<div id="view-converter" style="display:none;">
+  <div class="converter-header">
+    <div class="converter-title">Omvandlare</div>
+  </div>
+  <div class="converter-grid">
+    <div class="converter-card">
+      <h3>Kg → Lbs</h3>
+      <div class="converter-input-wrap">
+        <input class="converter-input" type="number" id="kgInput" placeholder="0" min="0" step="0.5" oninput="convertKgToLbs()" />
+        <span class="converter-unit">kg</span>
+      </div>
+      <div class="converter-result">
+        <span class="converter-result-val" id="lbsResult">—</span>
+        <span class="converter-result-unit">lbs</span>
+      </div>
+    </div>
+    <div class="converter-card">
+      <h3>Lbs → Kg</h3>
+      <div class="converter-input-wrap">
+        <input class="converter-input" type="number" id="lbsInput" placeholder="0" min="0" step="1" oninput="convertLbsToKg()" />
+        <span class="converter-unit">lbs</span>
+      </div>
+      <div class="converter-result">
+        <span class="converter-result-val" id="kgResult">—</span>
+        <span class="converter-result-unit">kg</span>
+      </div>
     </div>
   </div>
 </div>
@@ -653,7 +997,20 @@
 
 <script>
   let workouts = JSON.parse(localStorage.getItem('ironlog_workouts') || '[]');
+  // Migrate old data: set.weight -> set.weightKg
+  workouts.forEach(w => (w.exercises || []).forEach(ex => {
+    if (!ex.mode) ex.mode = 'weight';
+    (ex.sets || []).forEach(set => {
+      if (set.weight !== undefined && set.weightKg === undefined) {
+        set.weightKg = set.weight;
+        delete set.weight;
+      }
+      if (set.weightLbs === undefined) set.weightLbs = '';
+      if (set.seconds === undefined) set.seconds = '';
+    });
+  }));
   let activeId = null;
+  let contentController = null; // AbortController for content event listeners
 
   function save() {
     localStorage.setItem('ironlog_workouts', JSON.stringify(workouts));
@@ -742,9 +1099,20 @@
     return workouts.find(w => w.id === activeId);
   }
 
+  function reorderExercise(fromId, toId) {
+    const w = getWorkout();
+    const from = w.exercises.findIndex(e => e.id === fromId);
+    const to = w.exercises.findIndex(e => e.id === toId);
+    if (from === -1 || to === -1 || from === to) return;
+    const [moved] = w.exercises.splice(from, 1);
+    w.exercises.splice(to, 0, moved);
+    save();
+    renderContent();
+  }
+
   function addExercise() {
     const w = getWorkout();
-    w.exercises.push({ id: uid(), name: '', comment: '', sets: [{ id: uid(), reps: '' }] });
+    w.exercises.unshift({ id: uid(), name: '', mode: 'weight', sets: [{ id: uid(), reps: '' }] });
     save();
     renderContent();
   }
@@ -759,7 +1127,7 @@
   function addSet(exId) {
     const w = getWorkout();
     const ex = w.exercises.find(e => e.id === exId);
-    ex.sets.push({ id: uid(), reps: '' });
+    ex.sets.push({ id: uid(), reps: '', weightKg: '', weightLbs: '', seconds: '' });
     save();
     renderContent();
   }
@@ -773,6 +1141,13 @@
     renderContent();
   }
 
+  function updateExerciseComment(exId, val) {
+    const w = getWorkout();
+    const ex = w.exercises.find(e => e.id === exId);
+    ex.comment = val;
+    save();
+  }
+
   function updateExerciseName(exId, val) {
     const w = getWorkout();
     const ex = w.exercises.find(e => e.id === exId);
@@ -781,18 +1156,22 @@
     updateSidebarMeta();
   }
 
-  function updateExerciseComment(exId, val) {
+  function toggleExerciseMode(exId) {
     const w = getWorkout();
     const ex = w.exercises.find(e => e.id === exId);
-    ex.comment = val;
+    const cycle = { 'weight': 'lbs', 'lbs': 'seconds', 'seconds': 'weight' };
+    ex.mode = cycle[ex.mode] || 'lbs';
     save();
+    renderContent();
   }
 
   function updateSetWeight(exId, setId, val) {
     const w = getWorkout();
     const ex = w.exercises.find(e => e.id === exId);
     const set = ex.sets.find(s => s.id === setId);
-    set.weight = val;
+    if (ex.mode === 'lbs') set.weightLbs = val;
+    else if (ex.mode === 'seconds') set.seconds = val;
+    else set.weightKg = val;
     save();
   }
 
@@ -895,9 +1274,30 @@
   function switchTab(tab) {
     document.getElementById('view-workouts').style.display = tab === 'workouts' ? 'grid' : 'none';
     document.getElementById('view-pb').style.display = tab === 'pb' ? 'block' : 'none';
+    document.getElementById('view-converter').style.display = tab === 'converter' ? 'block' : 'none';
     document.getElementById('tab-workouts').classList.toggle('active', tab === 'workouts');
     document.getElementById('tab-pb').classList.toggle('active', tab === 'pb');
+    document.getElementById('tab-converter').classList.toggle('active', tab === 'converter');
+    // Bottom nav
+    const bw = document.getElementById('bnav-workouts');
+    const bp = document.getElementById('bnav-pb');
+    const bc = document.getElementById('bnav-converter');
+    if (bw) bw.classList.toggle('active', tab === 'workouts');
+    if (bp) bp.classList.toggle('active', tab === 'pb');
+    if (bc) bc.classList.toggle('active', tab === 'converter');
     if (tab === 'pb') renderPb();
+  }
+
+  function convertKgToLbs() {
+    const val = parseFloat(document.getElementById('kgInput').value);
+    const out = document.getElementById('lbsResult');
+    out.textContent = isNaN(val) ? '—' : (val * 2.20462).toFixed(1);
+  }
+
+  function convertLbsToKg() {
+    const val = parseFloat(document.getElementById('lbsInput').value);
+    const out = document.getElementById('kgResult');
+    out.textContent = isNaN(val) ? '—' : (val / 2.20462).toFixed(2);
   }
 
   // --- Personbästa ---
@@ -1082,12 +1482,16 @@
     }
 
     const exercisesHTML = w.exercises.map((ex, i) => {
-      const setsHTML = ex.sets.map((set, si) => `
+      const isSeconds = (ex.mode === 'seconds');
+      const isLbs = (ex.mode === 'lbs');
+      const setsHTML = ex.sets.map((set, si) => {
+        const unitVal = isSeconds ? (set.seconds ?? '') : isLbs ? (set.weightLbs ?? '') : (set.weightKg ?? '');
+        return `
         <tr>
           <td class="set-number">${si + 1}</td>
           <td>
-            <input class="set-input weight-input" type="number" min="0" step="0.5" placeholder="—" value="${set.weight ?? ''}"
-              data-exid="${ex.id}" data-id="${set.id}" title="Vikt (kg)" />
+            <input class="set-input weight-input" type="number" min="0" step="${isSeconds ? '1' : '0.5'}" placeholder="—" value="${unitVal}"
+              data-exid="${ex.id}" data-id="${set.id}" title="${isSeconds ? 'Sekunder' : isLbs ? 'Vikt (lbs)' : 'Vikt (kg)'}" />
           </td>
           <td>
             <input class="set-input reps-input" type="number" min="1" placeholder="—" value="${set.reps}"
@@ -1097,21 +1501,23 @@
             <button class="set-delete" data-action="delete-set" data-exid="${ex.id}" data-id="${set.id}" title="Ta bort set">✕</button>
           </td>
         </tr>
-      `).join('');
+      `}).join('');
 
       return `
-        <div class="exercise-card">
+        <div class="exercise-card" draggable="false" data-exid="${ex.id}">
           <div class="exercise-header">
+            <span class="drag-handle" data-action="drag-handle" title="Dra för att ändra ordning">⠿</span>
             <input class="exercise-name-input" type="text" placeholder="Övningsnamn…"
               value="${ex.name}" data-id="${ex.id}" />
             <span class="tag">${ex.sets.length} set</span>
+            <button class="mode-toggle ${isSeconds ? 'active-seconds' : isLbs ? 'active-lbs' : ''}" data-action="toggle-mode" data-id="${ex.id}">${isSeconds ? '⏱ Sek' : isLbs ? '🏋️ Lbs' : '🏋️ Kg'}</button>
             <button class="btn-danger" data-action="delete-exercise" data-id="${ex.id}">Ta bort</button>
           </div>
           <table class="sets-table">
             <thead>
               <tr>
                 <th>Set</th>
-                <th>Vikt (kg)</th>
+                <th>${isSeconds ? 'Sekunder' : isLbs ? 'Vikt (lbs)' : 'Vikt (kg)'}</th>
                 <th>Reps</th>
                 <th></th>
               </tr>
@@ -1125,8 +1531,8 @@
               </tr>
             </tbody>
           </table>
-          <textarea class="exercise-comment" placeholder="Kommentar (t.ex. känsla, teknik, ökad vikt nästa gång…)"
-            data-id="${ex.id}">${ex.comment ?? ''}</textarea>
+          <textarea class="exercise-comment" data-id="${ex.id}" rows="1"
+            placeholder="Kommentar… (t.ex. maskin, grepp, anteckningar)">${ex.comment || ''}</textarea>
         </div>
       `;
     }).join('');
@@ -1150,6 +1556,11 @@
       }
     `;
 
+    // Abort any previous listeners, then create fresh ones
+    if (contentController) contentController.abort();
+    contentController = new AbortController();
+    const { signal } = contentController;
+
     // Event delegation for all content actions
     content.addEventListener('click', e => {
       const btn = e.target.closest('[data-action]');
@@ -1159,23 +1570,125 @@
       else if (action === 'rename') openRename();
       else if (action === 'delete-workout') confirmDeleteWorkout(btn.dataset.id);
       else if (action === 'add-exercise') addExercise();
+      else if (action === 'toggle-mode') toggleExerciseMode(btn.dataset.id);
       else if (action === 'delete-exercise') deleteExercise(btn.dataset.id);
       else if (action === 'add-set') addSet(btn.dataset.id);
       else if (action === 'delete-set') deleteSet(btn.dataset.exid, btn.dataset.id);
-    });
+    }, { signal });
 
     // Live input handlers
+    content.querySelectorAll('.exercise-comment').forEach(ta => {
+      // Auto-resize
+      const resize = () => { ta.style.height = 'auto'; ta.style.height = ta.scrollHeight + 'px'; };
+      resize();
+      ta.addEventListener('input', () => { updateExerciseComment(ta.dataset.id, ta.value); resize(); }, { signal });
+    });
+
     content.querySelectorAll('.exercise-name-input').forEach(input => {
-      input.addEventListener('input', () => updateExerciseName(input.dataset.id, input.value));
+      input.addEventListener('input', () => updateExerciseName(input.dataset.id, input.value), { signal });
     });
     content.querySelectorAll('.weight-input').forEach(input => {
-      input.addEventListener('change', () => updateSetWeight(input.dataset.exid, input.dataset.id, input.value));
+      input.addEventListener('change', () => updateSetWeight(input.dataset.exid, input.dataset.id, input.value), { signal });
     });
     content.querySelectorAll('.reps-input').forEach(input => {
-      input.addEventListener('change', () => updateSetReps(input.dataset.exid, input.dataset.id, input.value));
+      input.addEventListener('change', () => updateSetReps(input.dataset.exid, input.dataset.id, input.value), { signal });
     });
-    content.querySelectorAll('.exercise-comment').forEach(input => {
-      input.addEventListener('input', () => updateExerciseComment(input.dataset.id, input.value));
+
+    // ── Drag-and-drop reordering ──
+    let dragSrcId = null;
+
+    content.querySelectorAll('.exercise-card').forEach(card => {
+      const handle = card.querySelector('.drag-handle');
+
+      // Enable dragging only when grabbing the handle
+      handle.addEventListener('mousedown', () => { card.draggable = true; }, { signal });
+      handle.addEventListener('touchstart', () => { card.draggable = true; }, { signal, passive: true });
+      card.addEventListener('dragend', () => { card.draggable = false; }, { signal });
+
+      card.addEventListener('dragstart', e => {
+        dragSrcId = card.dataset.exid;
+        card.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      }, { signal });
+
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+        content.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('drag-over'));
+      }, { signal });
+
+      card.addEventListener('dragover', e => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        content.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('drag-over'));
+        if (card.dataset.exid !== dragSrcId) card.classList.add('drag-over');
+      }, { signal });
+
+      card.addEventListener('dragleave', () => {
+        card.classList.remove('drag-over');
+      }, { signal });
+
+      card.addEventListener('drop', e => {
+        e.preventDefault();
+        card.classList.remove('drag-over');
+        if (dragSrcId && card.dataset.exid !== dragSrcId) {
+          reorderExercise(dragSrcId, card.dataset.exid);
+        }
+      }, { signal });
+    });
+
+    // ── Touch drag for mobile ──
+    let touchDragId = null, touchClone = null, touchTarget = null, touchOffsetY = 0;
+
+    function cleanupTouchDrag() {
+      if (touchClone) { touchClone.remove(); touchClone = null; }
+      document.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('dragging', 'drag-over'));
+      touchDragId = null; touchTarget = null;
+    }
+
+    content.querySelectorAll('.drag-handle').forEach(handle => {
+      handle.addEventListener('touchstart', e => {
+        const card = handle.closest('.exercise-card');
+        touchDragId = card.dataset.exid;
+        const touch = e.touches[0];
+        const rect = card.getBoundingClientRect();
+        touchOffsetY = touch.clientY - rect.top;
+        touchClone = card.cloneNode(true);
+        touchClone.style.cssText = 'position:fixed;left:' + rect.left + 'px;top:' + rect.top + 'px;width:' + rect.width + 'px;opacity:0.85;z-index:9999;pointer-events:none;border:1px solid var(--accent);background:#1f2200;border-radius:12px;transition:none;';
+        document.body.appendChild(touchClone);
+        card.classList.add('dragging');
+      }, { signal, passive: true });
+    });
+
+    // Attach move/end/cancel to document so they fire even if finger leaves the handle
+    document.addEventListener('touchmove', e => {
+      if (!touchClone || !touchDragId) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const cloneRect = touchClone.getBoundingClientRect();
+      touchClone.style.top = (touch.clientY - touchOffsetY) + 'px';
+      // Find card under finger
+      touchClone.style.visibility = 'hidden';
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      touchClone.style.visibility = '';
+      const overCard = el && el.closest('.exercise-card');
+      document.querySelectorAll('.exercise-card').forEach(c => c.classList.remove('drag-over'));
+      if (overCard && overCard.dataset.exid !== touchDragId) {
+        touchTarget = overCard.dataset.exid;
+        overCard.classList.add('drag-over');
+      } else {
+        touchTarget = null;
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchend', () => {
+      if (!touchDragId) return;
+      const from = touchDragId, to = touchTarget;
+      cleanupTouchDrag();
+      if (from && to) reorderExercise(from, to);
+    });
+
+    document.addEventListener('touchcancel', () => {
+      cleanupTouchDrag();
     });
   }
 
